@@ -53,7 +53,7 @@ const userSchema = new mongoose.Schema({
   },
   avatar: {
     type: String,
-    required: true,
+    required: false,
     trim: true,
     validate(value) {
       if (!validator.isURL(value)) {
@@ -61,6 +61,15 @@ const userSchema = new mongoose.Schema({
       }
     },
   },
+  friends: [
+    {
+      friend: {
+        type: mongoose.Schema.Types.ObjectId,
+        required: true,
+        ref: "User",
+      },
+    },
+  ],
   tokens: [
     {
       token: {
@@ -70,6 +79,17 @@ const userSchema = new mongoose.Schema({
     },
   ],
 });
+
+//json
+userSchema.methods.toJSON = function () {
+  const user = this;
+  const userObject = user.toObject();
+
+  delete userObject.password;
+  delete userObject.tokens;
+
+  return userObject;
+};
 
 //create token
 userSchema.methods.generateAuthToken = async function () {
@@ -103,7 +123,7 @@ userSchema.pre("save", async function (next) {
   const user = this;
 
   if (user.isModified("password")) {
-    user.password = await bcrypt.hash(user.password, 8); 
+    user.password = await bcrypt.hash(user.password, 8);
   }
 
   next();
