@@ -4,129 +4,129 @@ const bcrypt = require("bcryptjs"); //hashing passwords
 const jwt = require("jsonwebtoken"); //generate tokens
 
 const userSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true,
-    trim: true,
-  },
-  email: {
-    type: String,
-    required: true,
-    trim: true,
-    unique: true,
-    validate(value) {
-      if (!validator.isEmail(value)) {
-        throw new Error("Email is invalid");
-      }
-    },
-  },
-  password: {
-    type: String,
-    required: true,
-    trim: true,
-    minlength: 7,
-    validate(value) {
-      if (value.toLowerCase().includes("password")) {
-        throw new Error('Password cannot contain "password"');
-      }
-    },
-  },
-  age: {
-    type: Number,
-    default: 0,
-    validate(value) {
-      if (value < 0) {
-        throw new Error("Age must be a positive number");
-      }
-    },
-  },
-  nickname: {
-    type: String,
-    required: true,
-    trim: true,
-    unique: true,
-    validate(value) {
-      if (value.toLowerCase().includes("admin")) {
-        throw new Error('Nickname cannot contain "admin"');
-      }
-    },
-  },
-  avatar: {
-    type: String,
-    required: false,
-    trim: true,
-    validate(value) {
-      if (!validator.isURL(value)) {
-        throw new Error("Avatar is invalid");
-      }
-    },
-  },
-  friends: [
-    {
-      friend: {
-        type: mongoose.Schema.Types.ObjectId,
-        required: true,
-        ref: "User",
-      },
-    },
-  ],
-  tokens: [
-    {
-      token: {
+    name: {
         type: String,
         required: true,
-      },
+        trim: true,
     },
-  ],
+    email: {
+        type: String,
+        required: true,
+        trim: true,
+        unique: true,
+        validate(value) {
+            if (!validator.isEmail(value)) {
+                throw new Error("Email is invalid");
+            }
+        },
+    },
+    password: {
+        type: String,
+        required: true,
+        trim: true,
+        minlength: 7,
+        validate(value) {
+            if (value.toLowerCase().includes("password")) {
+                throw new Error('Password cannot contain "password"');
+            }
+        },
+    },
+    age: {
+        type: Number,
+        default: 0,
+        validate(value) {
+            if (value < 0) {
+                throw new Error("Age must be a positive number");
+            }
+        },
+    },
+    nickname: {
+        type: String,
+        required: true,
+        trim: true,
+        unique: true,
+        validate(value) {
+            if (value.toLowerCase().includes("admin")) {
+                throw new Error('Nickname cannot contain "admin"');
+            }
+        },
+    },
+    avatar: {
+        type: String,
+        required: false,
+        trim: true,
+        validate(value) {
+            if (!validator.isURL(value)) {
+                throw new Error("Avatar is invalid");
+            }
+        },
+    },
+    friends: [
+        {
+            friend: {
+                type: mongoose.Schema.Types.ObjectId,
+                required: true,
+                ref: "User",
+            },
+        },
+    ],
+    tokens: [
+        {
+            token: {
+                type: String,
+                required: true,
+            },
+        },
+    ],
 });
 
 //json
 userSchema.methods.toJSON = function () {
-  const user = this;
-  const userObject = user.toObject();
+    const user = this;
+    const userObject = user.toObject();
 
-  delete userObject.password;
-  delete userObject.tokens;
+    delete userObject.password;
+    delete userObject.tokens;
 
-  return userObject;
+    return userObject;
 };
 
 //create token
 userSchema.methods.generateAuthToken = async function () {
-  const user = this;
-  const token = jwt.sign({ _id: user._id.toString() }, "thisismybackend");
+    const user = this;
+    const token = jwt.sign({ _id: user._id.toString() }, "thisismybackend");
 
-  user.tokens = user.tokens.concat({ token });
-  await user.save();
-  return token;
+    user.tokens = user.tokens.concat({ token });
+    await user.save();
+    return token;
 };
 
 //find user by credentials
 userSchema.statics.findByCredentials = async (email, password) => {
-  const user = await User.findOne({ email });
+    const user = await User.findOne({ email });
 
-  if (!user) {
-    throw new Error("Unable to login");
-  }
+    if (!user) {
+        throw new Error("Unable to login");
+    }
 
-  const isMatch = await bcrypt.compare(password, user.password);
+    const isMatch = await bcrypt.compare(password, user.password);
 
-  if (!isMatch) {
-    throw new Error("Unable to login");
-  }
+    if (!isMatch) {
+        throw new Error("Unable to login");
+    }
 
-  return user;
+    return user;
 };
 
 //hash the plain text password before saving
 userSchema.pre("save", async function (next) {
-  const user = this;
+    const user = this;
 
-  if (user.isModified("password")) {
-    user.password = await bcrypt.hash(user.password, 8);
-  }
+    if (user.isModified("password")) {
+        user.password = await bcrypt.hash(user.password, 8);
+    }
 
-  next();
+    next();
 });
 
 const User = mongoose.model("User", userSchema);
