@@ -2,14 +2,58 @@ const express = require("express");
 //import mongoose from "mongoose";
 const auth = require("../middleware/auth");
 const Post = require("../models/Post");
+const Hashtag = require("../models/Hashtag");
+const Post_Hashtags = require("../models/Post_Hashtag");
+const User = require("../models/User");
 const router = express.Router();
 
 //create a new post
 router.post("/create", auth, async (req, res) => {
     const post = new Post({ ...req.body, userId: req.user._id });
     try {
+        //buscar hashtags en el content del post
+        const regex = /#\w+/g;
+        const hashtags = post.content.match(regex);
+        if (hashtags) {
+            //si hay hashtags, guardarlos en la tabla Post_Hashtag
+            for (let i = 0; i < hashtags.length; i++) {
+                const existingHashtag = await Hashtag.findOne({ name: hashtags[i] });
+                let hashtagId;
+                if (!existingHashtag) {
+                    const newHashtag = new Hashtag({ name: hashtags[i] });
+                    await newHashtag.save();
+                    hashtagId = newHashtag._id;
+                } else {
+                    hashtagId = existingHashtag._id;
+                }
+                const postHashtag = new Post_Hashtags({ postId: post._id, hashtagId: hashtagId });
+                await postHashtag.save();
+            }
+        }
         await post.save();
-        res.status(201).send(post);
+        res.send(post);
+    } catch (error) {
+        res.send(error);
+    }
+});
+
+//buscador
+router.get("/search/:searchText/", auth, async (req, res) => {
+    const searchText = req.params.searchText;
+    try {
+        //buscar posts por texto
+        const postsByContent = await Post.find({ content: { $regex: searchText, $options: "i" } }).populate("userId", "name");
+        //buscar posts por hashtags
+        const hashtags = await Hashtag.find({ name: { $regex: searchText, $options: "i" } });
+        const hashtagIds = hashtags.map((hashtag) => hashtag._id);
+        const postsByHashtag = await Post_Hashtags.find({ hashtagId: { $in: hashtagIds } }).populate("postId", "content");
+
+        //buscar usuario por nickname
+        const users = await User.find({ nickname: { $regex: searchText, $options: "i" } });
+
+        const posts = postsByContent.concat(postsByHashtag.map((postHashtag) => postHashtag.postId));
+
+        res.send({ posts, users });
     } catch (error) {
         res.send(error);
     }
