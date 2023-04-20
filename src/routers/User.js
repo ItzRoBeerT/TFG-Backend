@@ -4,6 +4,85 @@ const router = new express.Router();
 const auth = require("../middleware/auth");
 const Post = require("../models/Post");
 
+//create a new user
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     User:
+ *       type: object
+ *       properties:
+ *         name:
+ *           type: string
+ *           description: The user's name
+ *         email:
+ *           type: string
+ *           description: The user's email
+ *         password:
+ *           type: string
+ *           description: The user's password
+ *         nickname:
+ *           type: string
+ *           description: The user's nickname
+ *         avatar:
+ *          type: string
+ *          description: The user's avatar
+ *         age:
+ *          type: number
+ *          description: The user's age
+ *         friends:
+ *          type: array
+ *          description: Array of objects representing the user's friends.
+ *          items:
+ *           type: object
+ *           properties:
+ *              friend:
+ *                   type: string
+ *                   description: The ID of the friend user, which references the "User" schema.
+ *                   example: 6123456789abcdef0123456
+ *         tokens:
+ *          type: array
+ *          description:  Array of objects representing the user's authentication tokens
+ *          items:
+ *           type: object
+ *           properties:
+ *              token:
+ *                  type: string
+ *                  description: The user's authentication token
+ *                  example: 1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef
+ *       required:
+ *         - name
+ *         - email
+ *         - password
+ *         - nickname
+ *       example:
+ *         name: John Doe
+ *         email: johndoe@email.com
+ *         password: johndoe21
+ *         nickname: johndoe
+ */
+
+/**
+ * @swagger
+ * /createAccount:
+ *   post:
+ *     summary: Create a new user
+ *     tags:
+ *       - User
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/User'
+ *     responses:
+ *       '200':
+ *         description: The user was successfully created
+ *       '400':
+ *         description: Bad Request
+ *       '500':
+ *         description: Internal Server Error
+ */
 router.post("/createAccount", async (req, res) => {
     const user = new User(req.body);
     try {
@@ -20,25 +99,158 @@ router.post("/createAccount", async (req, res) => {
     }
 });
 
-router.get("/hello", (req, res) => {
+router.get("/", (req, res) => {
     res.send("Hello World!");
 });
 
+//get all users (for testing purposes)
+/**
+ * @swagger
+ * /all:
+ *   get:
+ *     summary: return all users
+ *     tags:
+ *       - User
+ *     responses:
+ *       '200':
+ *         description: all users
+ *         content:
+ *          application/json:
+ *           schema:
+ *            type: array
+ *            items:
+ *              $ref: '#/components/schemas/User'
+ *       '500':
+ *         description: Internal Server Error
+ */
+router.get("/all", async (req, res) => {
+    try {
+        const users = await User.find({});
+        res.send(users);
+    } catch (e) {
+        res.status(500).send();
+    }
+});
+
+//login user
+/**
+ * @swagger
+ * /login:
+ *   post:
+ *     summary: Log in a user
+ *     tags:
+ *       - User
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               password:
+ *                 type: string
+ *             required:
+ *               - email
+ *               - password
+ *     responses:
+ *       '200':
+ *         description: Successfully logged in
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 user:
+ *                   $ref: '#/components/schemas/User'
+ *                 token:
+ *                   type: string
+ *       '400':
+ *         description: Invalid email or password
+ *       '500':
+ *         description: Internal server error
+ */
 router.post("/login", async (req, res) => {
     try {
         const user = await User.findByCredentials(req.body.email, req.body.password);
         const token = await user.generateAuthToken();
         res.send({ user, token });
     } catch (e) {
-        res.status(400).send();
+        res.status(400).send({ error: "Invalid credentials" });
     }
 });
 
+//return user profile
+/**
+ * @swagger
+ * /me:
+ *   get:
+ *     summary: Retrieve the authenticated user's profile
+ *     description: Use this endpoint to retrieve the profile information of the currently authenticated user. Authentication is required to access this endpoint.
+ *     tags:
+ *       - User
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       '200':
+ *         description: Return the user's profile and authentication token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 user:
+ *                   $ref: '#/components/schemas/User'
+ *                 token:
+ *                   type: string
+ *                   description: The authentication token for the user
+ *       '400':
+ *         description: The request was invalid or malformed
+ *       '401':
+ *         description: The user is not authenticated or the authentication token is invalid or expired
+ *       '404':
+ *         description: The authenticated user's profile could not be found
+ */
 router.get("/me", auth, async (req, res) => {
-    res.send(req.user);
+    try {
+        if (!req.user) {
+            return res.status(404).send({ error: "The authenticated user's profile could not be found" });
+        }
+        res.send({ user: req.user, token: req.token });
+    } catch (e) {
+        res.status(500).send({ error: "An error occurred while retrieving the authenticated user's profile" });
+    }
 });
 
 //add a new friend
+/**
+ * @swagger
+ * /addFriend/{id}:
+ *  post:
+ *   summary: Add a new friend
+ *   description: Use this endpoint to add a new friend to the authenticated user's friend list. Authentication is required to access this endpoint.
+ *   tags: [User]
+ *   security:
+ *    - bearerAuth: []
+ *   parameters:
+ *     - in: path
+ *       name: id
+ *       schema:
+ *        type: string
+ *        required: true
+ *        description: The ID of the friend to add
+ *   responses:
+ *    '200':
+ *       description: The friend was successfully added
+ *    '400':
+ *       description: The friend could not be added
+ *    '404':
+ *       description: The user or friend could not be found
+ *    '500':
+ *       description: Internal server error
+ */
 router.post("/addFriend/:id", auth, async (req, res) => {
     try {
         const user = await User.findById(req.user._id);
@@ -67,6 +279,33 @@ router.post("/addFriend/:id", auth, async (req, res) => {
 });
 
 //get all friends
+/**
+ * @swagger
+ * /getFriends:
+ *   get:
+ *    summary: Retrieve the authenticated user's friends
+ *    description: Use this endpoint to retrieve the friends of the currently authenticated user. Authentication is required to access this endpoint.
+ *    tags: [User]
+ *    security:
+ *      - bearerAuth: []
+ *    responses:
+ *     '200':
+ *          description: Return the user's friends
+ *          content:
+ *              application/json:
+ *                 schema:
+ *                 type: array
+ *                 items:
+ *                 $ref: '#/components/schemas/User'
+ *     '400':
+ *         description: The request was invalid or malformed
+ *     '401':
+ *         description: The user is not authenticated or the authentication token is invalid or expired
+ *     '404':
+ *         description: The authenticated user's profile could not be found
+ *     '500':
+ *         description: Internal server error
+ */
 router.get("/getFriends", auth, async (req, res) => {
     try {
         const user = await User.findById(req.user._id).populate("friends.friend"); //populate the friends array with the friend object
@@ -82,6 +321,32 @@ router.get("/getFriends", auth, async (req, res) => {
 });
 
 //delete a friend
+/**
+ * @swagger
+ * /deleteFriend/{id}:
+ *  delete:
+ *   summary: Delete a friend
+ *   description: Use this endpoint to delete a friend from the authenticated user's friend list. Authentication is required to access this endpoint.
+ *   tags: [User]
+ *   security:
+ *   - bearerAuth: []
+ *   parameters:
+ *    - in: path
+ *      name: id
+ *      schema:
+ *      type: string
+ *      required: true
+ *      description: The ID of the friend to delete
+ *   responses:
+ *    '200':
+ *       description: The friend was successfully deleted
+ *    '400':
+ *       description: The friend could not be deleted
+ *    '404':
+ *       description: The user or friend could not be found
+ *    '500':
+ *       description: Internal server error   
+ */
 router.delete("/deleteFriend/:id", auth, async (req, res) => {
     try {
         const user = await User.findById(req.user._id);
@@ -102,7 +367,24 @@ router.delete("/deleteFriend/:id", auth, async (req, res) => {
     }
 });
 
-//logout
+//logout user
+/**
+ * @swagger
+ * /logout:
+ *   get:
+ *      summary: Logout the authenticated user
+ *      description: Use this endpoint to logout the currently authenticated user. Authentication is required to access this endpoint.
+ *      tags: [User]
+ *      security:
+ *          - bearerAuth: []
+ *      responses:
+ *          '200':
+ *               description: The user was successfully logged out
+ *          '401':
+ *              description: The user is not authenticated or the authentication token is invalid or expired
+ *          '500':
+ *              description: Internal server error 
+ */
 router.get("/logout", auth, async (req, res) => {
     try {
         req.user.tokens = req.user.tokens.filter((token) => {
@@ -116,6 +398,23 @@ router.get("/logout", auth, async (req, res) => {
 });
 
 //delete user
+/**
+ * @swagger
+ * /deleteAccount:
+ *  delete:
+ *      summary: Delete the authenticated user's account
+ *      description: Use this endpoint to delete the currently authenticated user's account. Authentication is required to access this endpoint.   
+ *      tags: [User]
+ *      security:
+ *         - bearerAuth: []
+ *      responses:
+ *         '200':
+ *            description: The user's account was successfully deleted
+ *         '401':
+ *            description: The user is not authenticated or the authentication token is invalid or expired
+ *         '500':
+ *            description: Internal server error
+ */
 router.delete("/deleteAccount", auth, async (req, res) => {
     try {
         const delteUser = await User.findByIdAndDelete({ _id: req.user._id });

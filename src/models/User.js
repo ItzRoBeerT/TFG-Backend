@@ -108,9 +108,7 @@ userSchema.statics.findByCredentials = async (email, password) => {
     if (!user) {
         throw new Error("Unable to login");
     }
-
     const isMatch = await bcrypt.compare(password, user.password);
-
     if (!isMatch) {
         throw new Error("Unable to login");
     }
@@ -121,7 +119,6 @@ userSchema.statics.findByCredentials = async (email, password) => {
 //hash the plain text password before saving
 userSchema.pre("save", async function (next) {
     const user = this;
-
     if (user.isModified("password")) {
         user.password = await bcrypt.hash(user.password, 8);
     }
