@@ -185,7 +185,7 @@ router.post("/login", async (req, res) => {
 //return user profile
 /**
  * @swagger
- * /me:
+ * /user/me:
  *   get:
  *     summary: Retrieve the authenticated user's profile
  *     description: Use this endpoint to retrieve the profile information of the currently authenticated user. Authentication is required to access this endpoint.
@@ -213,7 +213,7 @@ router.post("/login", async (req, res) => {
  *       '404':
  *         description: The authenticated user's profile could not be found
  */
-router.get("/me", auth, async (req, res) => {
+router.get("/user/me", auth, async (req, res) => {
     try {
         if (!req.user) {
             return res.status(404).send({ error: "The authenticated user's profile could not be found" });
@@ -227,7 +227,7 @@ router.get("/me", auth, async (req, res) => {
 //add a new friend
 /**
  * @swagger
- * /addFriend/{id}:
+ * /user/addFriend/{id}:
  *  post:
  *   summary: Add a new friend
  *   description: Use this endpoint to add a new friend to the authenticated user's friend list. Authentication is required to access this endpoint.
@@ -251,7 +251,7 @@ router.get("/me", auth, async (req, res) => {
  *    '500':
  *       description: Internal server error
  */
-router.post("/addFriend/:id", auth, async (req, res) => {
+router.post("/user/addFriend/:id", auth, async (req, res) => {
     try {
         const user = await User.findById(req.user._id);
         if (!user) {
@@ -281,7 +281,7 @@ router.post("/addFriend/:id", auth, async (req, res) => {
 //get all friends
 /**
  * @swagger
- * /getFriends:
+ * /user/getFriends:
  *   get:
  *    summary: Retrieve the authenticated user's friends
  *    description: Use this endpoint to retrieve the friends of the currently authenticated user. Authentication is required to access this endpoint.
@@ -306,7 +306,7 @@ router.post("/addFriend/:id", auth, async (req, res) => {
  *     '500':
  *         description: Internal server error
  */
-router.get("/getFriends", auth, async (req, res) => {
+router.get("/user/getFriends", auth, async (req, res) => {
     try {
         const user = await User.findById(req.user._id).populate("friends.friend"); //populate the friends array with the friend object
         if (!user) {
@@ -323,7 +323,7 @@ router.get("/getFriends", auth, async (req, res) => {
 //delete a friend
 /**
  * @swagger
- * /deleteFriend/{id}:
+ * /user/deleteFriend/{id}:
  *  delete:
  *   summary: Delete a friend
  *   description: Use this endpoint to delete a friend from the authenticated user's friend list. Authentication is required to access this endpoint.
@@ -347,7 +347,7 @@ router.get("/getFriends", auth, async (req, res) => {
  *    '500':
  *       description: Internal server error   
  */
-router.delete("/deleteFriend/:id", auth, async (req, res) => {
+router.delete("/user/deleteFriend/:id", auth, async (req, res) => {
     try {
         const user = await User.findById(req.user._id);
         if (!user) {
@@ -370,7 +370,7 @@ router.delete("/deleteFriend/:id", auth, async (req, res) => {
 //logout user
 /**
  * @swagger
- * /logout:
+ * /user/logout:
  *   get:
  *      summary: Logout the authenticated user
  *      description: Use this endpoint to logout the currently authenticated user. Authentication is required to access this endpoint.
@@ -385,7 +385,7 @@ router.delete("/deleteFriend/:id", auth, async (req, res) => {
  *          '500':
  *              description: Internal server error 
  */
-router.get("/logout", auth, async (req, res) => {
+router.get("/user/logout", auth, async (req, res) => {
     try {
         req.user.tokens = req.user.tokens.filter((token) => {
             return token.token !== req.token;
@@ -400,7 +400,7 @@ router.get("/logout", auth, async (req, res) => {
 //delete user
 /**
  * @swagger
- * /deleteAccount:
+ * /user/deleteAccount:
  *  delete:
  *      summary: Delete the authenticated user's account
  *      description: Use this endpoint to delete the currently authenticated user's account. Authentication is required to access this endpoint.   
@@ -415,7 +415,7 @@ router.get("/logout", auth, async (req, res) => {
  *         '500':
  *            description: Internal server error
  */
-router.delete("/deleteAccount", auth, async (req, res) => {
+router.delete("/user/deleteAccount", auth, async (req, res) => {
     try {
         const delteUser = await User.findByIdAndDelete({ _id: req.user._id });
 

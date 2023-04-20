@@ -105,7 +105,7 @@ const router = express.Router();
 //create a new post
 /**
  * @swagger
- * /create:
+ * /post/create:
  *   post:
  *      summary: Create a new post
  *      tags: [Post]
@@ -127,7 +127,7 @@ const router = express.Router();
  *       400:
  *          description: Bad request
  */
-router.post("/create", auth, async (req, res) => {
+router.post("/post/create", auth, async (req, res) => {
     const post = new Post({ ...req.body, userId: req.user._id });
     try {
         //buscar hashtags en el content del post
@@ -208,7 +208,7 @@ router.get("/post/search/:searchText/", auth, async (req, res) => {
 //obtain all posts where the user is the owner
 /**
  * @swagger
- * /all:
+ * /post/all:
  *   get:
  *      summary: Obtain all posts where the user is the owner
  *      tags: [Post]
@@ -226,7 +226,7 @@ router.get("/post/search/:searchText/", auth, async (req, res) => {
  *          404:
  *              description: Not found
  */
-router.get("/all", auth, async (req, res) => {
+router.get("/post/all", auth, async (req, res) => {
     try {
         const posts = await Post.find({ user: req.user._id });
         if (!posts) {
@@ -241,7 +241,7 @@ router.get("/all", auth, async (req, res) => {
 //obtain a post where the user is the owner
 /**
  * @swagger
- * /get/{id}:
+ * /post/get/{id}:
  *      get:
  *          summary: Obtain a post where the user is the owner
  *          tags: [Post]
@@ -266,7 +266,7 @@ router.get("/all", auth, async (req, res) => {
  *              404:
  *                  description: Not found
  */
-router.get("/get/:id", auth, async (req, res) => {
+router.get("/post/get/:id", auth, async (req, res) => {
     try {
         const post = await Post.findOne({ _id: req.params.id, userId: req.user._id });
         if (!post) {
@@ -281,7 +281,7 @@ router.get("/get/:id", auth, async (req, res) => {
 //add a comment to a post
 /**
  * @swagger
- * /addComment/{id}:
+ * /post/addComment/{id}:
  *   post:
  *     summary: add a comment to a post
  *     tags: [Post]
@@ -320,7 +320,7 @@ router.get("/get/:id", auth, async (req, res) => {
  *       500:
  *         description: Some server error
  */
-router.post("/addComment/:id", auth, async (req, res) => {
+router.post("/post/addComment/:id", auth, async (req, res) => {
     try {
         const post = await Post.findById(req.params.id);
         if (!post) {
@@ -336,7 +336,7 @@ router.post("/addComment/:id", auth, async (req, res) => {
 //give a like to a post
 /**
  * @swagger
- * /like/{id}:
+ * /post/like/{id}:
  *   post:
  *     summary: give a like to a post
  *     tags: [Post]
@@ -363,7 +363,7 @@ router.post("/addComment/:id", auth, async (req, res) => {
  *       500:
  *         description: Some server error
  */
-router.post("/like/:id", auth, async (req, res) => {
+router.post("/post/like/:id", auth, async (req, res) => {
     try {
         const post = await Post.findById(req.params.id);
         if (!post) {
@@ -387,7 +387,7 @@ router.post("/like/:id", auth, async (req, res) => {
 //update a post where the user is the owner
 /**
  * @swagger
- * /updatePost/{id}:
+ * /post/updatePost/{id}:
  *   patch:
  *     summary: Update a post where the user is the owner
  *     tags: [Post]
@@ -430,7 +430,7 @@ router.post("/like/:id", auth, async (req, res) => {
  *       500:
  *         description: Some server error
  */
-router.patch("/updatePost/:id", auth, async (req, res) => {
+router.patch("/post/updatePost/:id", auth, async (req, res) => {
     const updates = Object.keys(req.body);
     const allowedUpdates = ["content", "image"];
     const isValidOperation = updates.every((update) => allowedUpdates.includes(update));
@@ -453,7 +453,7 @@ router.patch("/updatePost/:id", auth, async (req, res) => {
 //delete a post where the user is the owner
 /**
  * @swagger
- * /deletePost/{id}:
+ * /post/deletePost/{id}:
  *   delete:
  *     summary: Delete a post where the user is the owner
  *     tags: [Post]
@@ -480,7 +480,7 @@ router.patch("/updatePost/:id", auth, async (req, res) => {
  *       500:
  *         description: Some server error
  */
-router.delete("/deletePost/:id", auth, async (req, res) => {
+router.delete("/post/deletePost/:id", auth, async (req, res) => {
     try {
         const post = await Post.findOneAndDelete({ _id: req.params.id, user: req.user._id });
         if (!post) {
