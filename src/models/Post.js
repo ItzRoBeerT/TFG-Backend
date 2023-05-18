@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const validator = require("validator");
+const moment = require("moment");
 
 const postSchema = new mongoose.Schema({
     content: {
@@ -25,6 +26,10 @@ const postSchema = new mongoose.Schema({
     likes: {
         type: Number,
         default: 0,
+    },
+    date:{
+        type: Date,
+        default: Date.now
     },
     likedBy:[
       {

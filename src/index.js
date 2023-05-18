@@ -1,4 +1,5 @@
 const express = require("express");
+const cors = require("cors");
 require("./db/mongoose");
 const userRouter = require("./routers/User");
 const postRouter = require("./routers/Post");
@@ -22,7 +23,7 @@ const swaggerOptions = {
         },
         servers: [
             {
-                url: "http://localhost:3000",
+                url: "http://localhost:3004",
             },
         ],
     },
@@ -32,6 +33,7 @@ app.use("/api-doc", swaggerUI.serve, swaggerUI.setup(swaggerJsDoc(swaggerOptions
 //#endregion
 
 // middlewares
+app.use(cors());
 app.use(express.json());
 app.use(userRouter);
 app.use(postRouter);

@@ -64,7 +64,7 @@ const Post = require("../models/Post");
 
 /**
  * @swagger
- * /createAccount:
+ * /user/createAccount:
  *   post:
  *     summary: Create a new user
  *     tags:
@@ -83,19 +83,13 @@ const Post = require("../models/Post");
  *       '500':
  *         description: Internal Server Error
  */
-router.post("/createAccount", async (req, res) => {
+router.post("/user/createAccount", async (req, res) => {
     const user = new User(req.body);
     try {
         await user.save();
         res.send("account created");
     } catch (e) {
-        if (e.keyPattern.email) {
-            res.status(400).send({ error: "Email already in use" });
-        } else if (e.keyPattern.nickname) {
-            res.status(400).send({ error: "Nickname already in use" });
-        } else {
-            res.status(500).send({ error: "Unexpected error" });
-        }
+       res.status(400).send({ error: e.message });
     }
 });
 
@@ -132,10 +126,22 @@ router.get("/all", async (req, res) => {
     }
 });
 
+router.get("/user/:id", async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id);
+        if (!user) {
+            return res.status(404).send({ error: "User not found" });
+        }
+        res.send(user);
+    } catch (e) {
+        res.status(500).send();
+    }
+});
+
 //login user
 /**
  * @swagger
- * /login:
+ * /user/login:
  *   post:
  *     summary: Log in a user
  *     tags:
@@ -172,13 +178,13 @@ router.get("/all", async (req, res) => {
  *       '500':
  *         description: Internal server error
  */
-router.post("/login", async (req, res) => {
+router.post("/user/login", async (req, res) => {
     try {
         const user = await User.findByCredentials(req.body.email, req.body.password);
         const token = await user.generateAuthToken();
         res.send({ user, token });
     } catch (e) {
-        res.status(400).send({ error: "Invalid credentials" });
+        res.status(401).send({ error: "Invalid email or password" });
     }
 });
 
@@ -345,7 +351,7 @@ router.get("/user/getFriends", auth, async (req, res) => {
  *    '404':
  *       description: The user or friend could not be found
  *    '500':
- *       description: Internal server error   
+ *       description: Internal server error
  */
 router.delete("/user/deleteFriend/:id", auth, async (req, res) => {
     try {
@@ -371,7 +377,7 @@ router.delete("/user/deleteFriend/:id", auth, async (req, res) => {
 /**
  * @swagger
  * /user/logout:
- *   get:
+ *   post:
  *      summary: Logout the authenticated user
  *      description: Use this endpoint to logout the currently authenticated user. Authentication is required to access this endpoint.
  *      tags: [User]
@@ -383,16 +389,18 @@ router.delete("/user/deleteFriend/:id", auth, async (req, res) => {
  *          '401':
  *              description: The user is not authenticated or the authentication token is invalid or expired
  *          '500':
- *              description: Internal server error 
+ *              description: Internal server error
  */
-router.get("/user/logout", auth, async (req, res) => {
+router.post("/user/logout", auth, async (req, res) => {
     try {
         req.user.tokens = req.user.tokens.filter((token) => {
             return token.token !== req.token;
         });
+
         await req.user.save();
         res.send("Logged out");
     } catch (e) {
+        console.log(e);
         res.status(500).send({ error: "Internal server error" });
     }
 });
@@ -403,7 +411,7 @@ router.get("/user/logout", auth, async (req, res) => {
  * /user/deleteAccount:
  *  delete:
  *      summary: Delete the authenticated user's account
- *      description: Use this endpoint to delete the currently authenticated user's account. Authentication is required to access this endpoint.   
+ *      description: Use this endpoint to delete the currently authenticated user's account. Authentication is required to access this endpoint.
  *      tags: [User]
  *      security:
  *         - bearerAuth: []

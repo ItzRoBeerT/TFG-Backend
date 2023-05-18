@@ -163,8 +163,6 @@ router.post("/post/create", auth, async (req, res) => {
  *   get:
  *     summary: Search posts by content, hashtags or users
  *     tags: [Post]
- *     security:
- *        - bearerAuth: []
  *     parameters:
  *      - in: path
  *        name: searchText
@@ -184,7 +182,7 @@ router.post("/post/create", auth, async (req, res) => {
  *      404:
  *          description: Not found
  */
-router.get("/post/search/:searchText/", auth, async (req, res) => {
+router.get("/post/search/:searchText/", async (req, res) => {
     const searchText = req.params.searchText;
     try {
         //buscar posts por texto
@@ -208,7 +206,7 @@ router.get("/post/search/:searchText/", auth, async (req, res) => {
 //obtain all posts where the user is the owner
 /**
  * @swagger
- * /post/all:
+ * /post/myPosts:
  *   get:
  *      summary: Obtain all posts where the user is the owner
  *      tags: [Post]
@@ -226,7 +224,7 @@ router.get("/post/search/:searchText/", auth, async (req, res) => {
  *          404:
  *              description: Not found
  */
-router.get("/post/all", auth, async (req, res) => {
+router.get("/post/myPosts", auth, async (req, res) => {
     try {
         const posts = await Post.find({ user: req.user._id });
         if (!posts) {
@@ -273,6 +271,37 @@ router.get("/post/get/:id", auth, async (req, res) => {
             return res.status(404).send();
         }
         res.send(post);
+    } catch (error) {
+        res.status(500).send({ error: "Internal server error" });
+    }
+});
+
+//obtain most popular posts
+/**
+ * @swagger
+ * /post/popular:
+ *      get:
+ *          summary: Obtain most popular posts
+ *          tags: [Post]
+ *          responses:
+ *              200:
+ *                  description: The posts were obtained
+ *              500:
+ *                  description: Some server error
+ *              401:
+ *                  description: Unauthorized
+ *              400:
+ *                  description: Bad request
+ *              404:
+ *                  description: Not found
+ */
+router.get("/post/popular", async (req, res) => {
+    try {
+        const posts = await Post.find().sort({ likes: -1 }).limit(10);
+        if (!posts) {
+            return res.status(404).send({ error: "No posts found" });
+        }
+        res.send(posts);
     } catch (error) {
         res.status(500).send({ error: "Internal server error" });
     }
@@ -434,6 +463,9 @@ router.patch("/post/updatePost/:id", auth, async (req, res) => {
     const updates = Object.keys(req.body);
     const allowedUpdates = ["content", "image"];
     const isValidOperation = updates.every((update) => allowedUpdates.includes(update));
+    if (updates.length === 0){
+        return res.status(400).send({ error: "No updates provided!" });
+    }
     if (!isValidOperation) {
         return res.status(400).send({ error: "Invalid updates!" });
     }
@@ -442,10 +474,13 @@ router.patch("/post/updatePost/:id", auth, async (req, res) => {
         if (!post) {
             return res.status(404).send();
         }
-        updates.forEach((update) => (post[update] = req.body[update]));
+        updates.forEach((update) => (
+            post[update] = req.body[update]
+            ));
         await post.save();
         res.send(post);
     } catch (error) {
+        console.log(error);
         res.status(500).send({ error: "Internal server error" });
     }
 });
@@ -491,5 +526,16 @@ router.delete("/post/deletePost/:id", auth, async (req, res) => {
         res.status(500).send({ error: "Internal server error" });
     }
 });
+
+//get all posts
+router.get("/post/getAllPosts", async (req, res) => {
+    try {
+        const posts = await Post.find({});
+        res.send(posts);
+    } catch (error) {
+        res.status(500).send({ error: "Internal server error" });
+    }
+});
+
 
 module.exports = router;
