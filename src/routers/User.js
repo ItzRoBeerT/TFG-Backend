@@ -278,7 +278,7 @@ router.post("/user/addFriend/:id", auth, async (req, res) => {
         user.friends.push({ friend: friend._id });
         await user.save();
 
-        res.send("Friend added");
+        res.send({ message: "Friend added successfully", user });
     } catch (error) {
         res.status(500).send({ error: "Internal server error" });
     }
@@ -367,7 +367,7 @@ router.delete("/user/deleteFriend/:id", auth, async (req, res) => {
 
         user.friends = user.friends.filter((f) => f.friend.toString() !== friend._id.toString());
         await user.save();
-        res.send("Friend deleted");
+        res.send({ message: "Friend deleted successfully", user });
     } catch (error) {
         res.status(500).send({ error: "Internal server error" });
     }
@@ -441,5 +441,57 @@ router.delete("/user/deleteAccount", auth, async (req, res) => {
         res.status(500).send("something went wrong");
     }
 });
+
+//get user by nickname
+router.get("/user/nickname/:nickname", async (req, res) => {
+    try {
+        const user = await User.findOne({ nickname: req.params.nickname });
+        if (!user) {
+            return res.status(404).send({ error: "User not found" });
+        }
+        res.send(user);
+    } catch (error) {
+        res.status(500).send({ error: "Internal server error" });
+    }
+});
+
+//obtener todos los friends de un usuario
+router.get("/user/getFriends/:id", async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id).populate("friends.friend"); //populate the friends array with the friend object
+        if (!user) {
+            return res.status(404).send({ error: "User not found" });
+        }
+
+        const friends = user.friends.map((f) => f.friend);
+        res.send(friends);
+    } catch (error) {
+        res.status(500).send({ error: "Internal server error" });
+    }
+} );
+
+// actualizar usuario logueado
+
+router.patch("/user/update", auth, async (req, res) => {
+    try {
+        const updates = Object.keys(req.body);
+        const allowedUpdates = ["nickname", "email", "password", "name", "lastName", "age", "bio", "avatar"];
+        const isValidOperation = updates.every((update) => allowedUpdates.includes(update));
+
+        if (!isValidOperation) {
+            return res.status(400).send({ error: "Invalid updates" });
+        }
+
+        updates.forEach((update) => (req.user[update] = req.body[update]));
+        await req.user.save();
+        res.send(req.user);
+    } catch (error) {
+        res.status(500).send({ error: "Internal server error" });
+    }
+});
+
+
+
+ 
 
 module.exports = router;

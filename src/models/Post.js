@@ -12,11 +12,6 @@ const postSchema = new mongoose.Schema({
         type: String,
         required: false,
         trim: true,
-        validate(value) {
-            if (!validator.isURL(value)) {
-                throw new Error("Image is invalid");
-            }
-        },
     },
     userId: {
         type: mongoose.Schema.Types.ObjectId,

@@ -1,10 +1,10 @@
-const express = require("express");
+const express = require('express');
 //import mongoose from "mongoose";
-const auth = require("../middleware/auth");
-const Post = require("../models/Post");
-const Hashtag = require("../models/Hashtag");
-const Post_Hashtags = require("../models/Post_Hashtag");
-const User = require("../models/User");
+const auth = require('../middleware/auth');
+const Post = require('../models/Post');
+const Hashtag = require('../models/Hashtag');
+const Post_Hashtags = require('../models/Post_Hashtag');
+const User = require('../models/User');
 const router = express.Router();
 
 //#region SCHEMAS SWAGGER
@@ -127,7 +127,7 @@ const router = express.Router();
  *       400:
  *          description: Bad request
  */
-router.post("/post/create", auth, async (req, res) => {
+router.post('/post/create', auth, async (req, res) => {
     const post = new Post({ ...req.body, userId: req.user._id });
     try {
         //buscar hashtags en el content del post
@@ -152,7 +152,7 @@ router.post("/post/create", auth, async (req, res) => {
         await post.save();
         res.send(post);
     } catch (error) {
-        res.status(500).send({ error: "Internal server error" });
+        res.status(500).send({ error: 'Internal server error' });
     }
 });
 
@@ -182,24 +182,24 @@ router.post("/post/create", auth, async (req, res) => {
  *      404:
  *          description: Not found
  */
-router.get("/post/search/:searchText/", async (req, res) => {
+router.get('/post/search/:searchText/', async (req, res) => {
     const searchText = req.params.searchText;
     try {
         //buscar posts por texto
-        const postsByContent = await Post.find({ content: { $regex: searchText, $options: "i" } }).populate("userId", "name");
+        const postsByContent = await Post.find({ content: { $regex: searchText, $options: 'i' } }).populate('userId', 'name');
         //buscar posts por hashtags
-        const hashtags = await Hashtag.find({ name: { $regex: searchText, $options: "i" } });
+        const hashtags = await Hashtag.find({ name: { $regex: searchText, $options: 'i' } });
         const hashtagIds = hashtags.map((hashtag) => hashtag._id);
-        const postsByHashtag = await Post_Hashtags.find({ hashtagId: { $in: hashtagIds } }).populate("postId", "content");
+        const postsByHashtag = await Post_Hashtags.find({ hashtagId: { $in: hashtagIds } }).populate('postId', 'content');
 
         //buscar usuario por nickname
-        const users = await User.find({ nickname: { $regex: searchText, $options: "i" } });
+        const users = await User.find({ nickname: { $regex: searchText, $options: 'i' } });
 
         const posts = postsByContent.concat(postsByHashtag.map((postHashtag) => postHashtag.postId));
 
         res.send({ posts, users });
     } catch (error) {
-        res.status(500).send({ error: "Internal server error" });
+        res.status(500).send({ error: 'Internal server error' });
     }
 });
 
@@ -224,18 +224,19 @@ router.get("/post/search/:searchText/", async (req, res) => {
  *          404:
  *              description: Not found
  */
-router.get("/post/myPosts", auth, async (req, res) => {
+router.get('/post/myPosts', auth, async (req, res) => {
     try {
         const posts = await Post.find({ user: req.user._id });
         if (!posts) {
-            return res.status(404).send({ error: "No posts found" });
+            return res.status(404).send({ error: 'No posts found' });
         }
         res.send(posts);
     } catch (error) {
-        res.status(500).send({ error: "Internal server error" });
+        res.status(500).send({ error: 'Internal server error' });
     }
 });
 
+//FIXME borrar
 //obtain a post where the user is the owner
 /**
  * @swagger
@@ -243,8 +244,6 @@ router.get("/post/myPosts", auth, async (req, res) => {
  *      get:
  *          summary: Obtain a post where the user is the owner
  *          tags: [Post]
- *          security:
- *              - bearerAuth: []
  *          parameters:
  *              - in: path
  *                name: id
@@ -264,7 +263,7 @@ router.get("/post/myPosts", auth, async (req, res) => {
  *              404:
  *                  description: Not found
  */
-router.get("/post/get/:id", auth, async (req, res) => {
+router.get('/post/get/:id', async (req, res) => {
     try {
         const post = await Post.findOne({ _id: req.params.id, userId: req.user._id });
         if (!post) {
@@ -272,7 +271,50 @@ router.get("/post/get/:id", auth, async (req, res) => {
         }
         res.send(post);
     } catch (error) {
-        res.status(500).send({ error: "Internal server error" });
+        res.status(500).send({ error: 'Internal server error' });
+    }
+});
+
+//obtain all posts where the user id is the owner
+router.get('/post/getByUserId/:id', async (req, res) => {
+    try {
+        const posts = await Post.find({ userId: req.params.id }).populate('userId', 'name');
+        if (!posts) {
+            return res.status(404).send({ error: 'No posts found' });
+        }
+        res.send(posts);
+    } catch (error) {
+        res.status(500).send({ error: 'Internal server error' });
+    }
+});
+
+//obtain all posts where the user nickname is the owner
+router.get('/post/getByNickname/:nickname', async (req, res) => {
+    try {
+        const user = await User.findOne({ nickname: req.params.nickname });
+        if (!user) {
+            return res.status(404).send({ error: 'No user found' });
+        }
+        const posts = await Post.find({ userId: user._id });
+        if (!posts) {
+            return res.status(404).send({ error: 'No posts found' });
+        }
+        res.send(posts);
+    } catch (error) {
+        res.status(500).send({ error: 'Internal server error' });
+    }
+});
+
+//obtain a post by id
+router.get('/post/getById/:id', async (req, res) => {
+    try {
+        const post = await Post.findOne({ _id: req.params.id }).populate('userId', 'name');
+        if (!post) {
+            return res.status(404).send();
+        }
+        res.send(post);
+    } catch (error) {
+        res.status(500).send({ error: 'Internal server error' });
     }
 });
 
@@ -295,15 +337,15 @@ router.get("/post/get/:id", auth, async (req, res) => {
  *              404:
  *                  description: Not found
  */
-router.get("/post/popular", async (req, res) => {
+router.get('/post/popular', async (req, res) => {
     try {
         const posts = await Post.find().sort({ likes: -1 }).limit(10);
         if (!posts) {
-            return res.status(404).send({ error: "No posts found" });
+            return res.status(404).send({ error: 'No posts found' });
         }
         res.send(posts);
     } catch (error) {
-        res.status(500).send({ error: "Internal server error" });
+        res.status(500).send({ error: 'Internal server error' });
     }
 });
 
@@ -349,7 +391,7 @@ router.get("/post/popular", async (req, res) => {
  *       500:
  *         description: Some server error
  */
-router.post("/post/addComment/:id", auth, async (req, res) => {
+router.post('/post/addComment/:id', auth, async (req, res) => {
     try {
         const post = await Post.findById(req.params.id);
         if (!post) {
@@ -359,7 +401,7 @@ router.post("/post/addComment/:id", auth, async (req, res) => {
         await post.save();
         res.send(post);
     } catch (error) {
-        res.status(500).send({ error: "Internal server error" });
+        res.status(500).send({ error: 'Internal server error' });
     }
 });
 //give a like to a post
@@ -392,7 +434,7 @@ router.post("/post/addComment/:id", auth, async (req, res) => {
  *       500:
  *         description: Some server error
  */
-router.post("/post/like/:id", auth, async (req, res) => {
+router.post('/post/like/:id', auth, async (req, res) => {
     try {
         const post = await Post.findById(req.params.id);
         if (!post) {
@@ -401,7 +443,7 @@ router.post("/post/like/:id", auth, async (req, res) => {
 
         //verificar si el usuario ya dio like
         if (post.likedBy.some((like) => like.userId.equals(req.user._id))) {
-            return res.status(400).send({ error: "You already liked this post!" });
+            return res.status(400).send({ error: 'You already liked this post!' });
         }
 
         post.likes = post.likes + 1;
@@ -409,7 +451,30 @@ router.post("/post/like/:id", auth, async (req, res) => {
         await post.save();
         res.send(post);
     } catch (error) {
-        res.status(500).send({ error: "Internal server error" });
+        res.status(500).send({ error: 'Internal server error' });
+    }
+});
+
+//remove a like to a post
+
+router.post('/post/unlike/:id', auth, async (req, res) => {
+    try {
+        const post = await Post.findById(req.params.id);
+        if (!post) {
+            return res.status(404).send();
+        }
+
+        //verificar si el usuario ya dio like
+        if (!post.likedBy.some((like) => like.userId.equals(req.user._id))) {
+            return res.status(400).send({ error: 'You have not liked this post!' });
+        }
+
+        post.likes = post.likes - 1;
+        post.likedBy = post.likedBy.filter((like) => !like.userId.equals(req.user._id));
+        await post.save();
+        res.send(post);
+    } catch (error) {
+        res.status(500).send({ error: 'Internal server error' });
     }
 });
 
@@ -459,29 +524,27 @@ router.post("/post/like/:id", auth, async (req, res) => {
  *       500:
  *         description: Some server error
  */
-router.patch("/post/updatePost/:id", auth, async (req, res) => {
+router.patch('/post/updatePost/:id', auth, async (req, res) => {
     const updates = Object.keys(req.body);
-    const allowedUpdates = ["content", "image"];
+    const allowedUpdates = ['content', 'image'];
     const isValidOperation = updates.every((update) => allowedUpdates.includes(update));
-    if (updates.length === 0){
-        return res.status(400).send({ error: "No updates provided!" });
+    if (updates.length === 0) {
+        return res.status(400).send({ error: 'No updates provided!' });
     }
     if (!isValidOperation) {
-        return res.status(400).send({ error: "Invalid updates!" });
+        return res.status(400).send({ error: 'Invalid updates!' });
     }
     try {
         const post = await Post.findOne({ _id: req.params.id, userId: req.user._id });
         if (!post) {
             return res.status(404).send();
         }
-        updates.forEach((update) => (
-            post[update] = req.body[update]
-            ));
+        updates.forEach((update) => (post[update] = req.body[update]));
         await post.save();
         res.send(post);
     } catch (error) {
         console.log(error);
-        res.status(500).send({ error: "Internal server error" });
+        res.status(500).send({ error: 'Internal server error' });
     }
 });
 
@@ -515,27 +578,72 @@ router.patch("/post/updatePost/:id", auth, async (req, res) => {
  *       500:
  *         description: Some server error
  */
-router.delete("/post/deletePost/:id", auth, async (req, res) => {
+router.delete('/post/deletePost/:id', auth, async (req, res) => {
     try {
-        const post = await Post.findOneAndDelete({ _id: req.params.id, user: req.user._id });
+        const post = await Post.findOneAndDelete({ _id: req.params.id, userId: req.user._id });
         if (!post) {
             return res.status(404).send();
         }
         res.send(post);
     } catch (error) {
-        res.status(500).send({ error: "Internal server error" });
+        res.status(500).send({ error: 'Internal server error' });
     }
 });
 
 //get all posts
-router.get("/post/getAllPosts", async (req, res) => {
+router.get('/post/getAllPosts', async (req, res) => {
     try {
         const posts = await Post.find({});
         res.send(posts);
     } catch (error) {
-        res.status(500).send({ error: "Internal server error" });
+        res.status(500).send({ error: 'Internal server error' });
     }
 });
 
+//delete a comment by id
+router.delete('/post/deleteComment/:id', auth, async (req, res) => {
+    try {
+        const post = await Post.findOne({ 'comments._id': req.params.id });
+
+        if (!post) {
+            return res.status(404).send();
+        }
+
+        // Buscar el comentario dentro del post
+        const comment = post.comments.find((comment) => comment._id.equals(req.params.id));
+
+        if (!comment) {
+            return res.status(404).send();
+        }
+
+        // Verificar si el usuario autenticado es el dueño del comentario
+        if (comment.userId.toString() !== req.user._id.toString()) {
+            return res.status(401).send({ error: 'No tienes permiso para realizar esta acción' });
+        }
+
+        // Eliminar el comentario del post
+        post.comments = post.comments.filter((comment) => !comment._id.equals(req.params.id));
+
+        await post.save();
+        res.send(post);
+    } catch (error) {
+        res.status(500).send({ error: 'Internal server error' });
+    }
+});
+
+//get all post ordered by date by recent
+router.get('/post/getRecentPosts/:page', async (req, res) => {
+    try {
+
+        const page = req.params.page || 1;
+        const limit = 5;
+        const skip = (page - 1) * limit;
+
+        const posts = await Post.find({}).sort({ date: -1 }).skip(skip).limit(limit);
+        res.send(posts);
+    } catch (error) {
+        res.status(500).send({ error: 'Internal server error' });
+    }
+});
 
 module.exports = router;

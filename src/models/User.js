@@ -9,6 +9,16 @@ const userSchema = new mongoose.Schema({
         required: true,
         trim: true,
     },
+    lastName: {
+        type: String,
+        required: false,
+        trim: true,
+    },
+    bio: {
+        type: String,
+        required: false,
+        trim: true,
+    },
     email: {
         type: String,
         required: true,
@@ -55,11 +65,6 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: false,
         trim: true,
-        validate(value) {
-            if (!validator.isURL(value)) {
-                throw new Error("Avatar is invalid");
-            }
-        },
     },
     friends: [
         {
