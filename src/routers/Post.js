@@ -182,26 +182,43 @@ router.post('/post/create', auth, async (req, res) => {
  *      404:
  *          description: Not found
  */
-router.get('/post/search/:searchText/', async (req, res) => {
+router.get('/post/search/:searchText', async (req, res) => {
     const searchText = req.params.searchText;
     try {
-        //buscar posts por texto
-        const postsByContent = await Post.find({ content: { $regex: searchText, $options: 'i' } }).populate('userId', 'name');
-        //buscar posts por hashtags
-        const hashtags = await Hashtag.find({ name: { $regex: searchText, $options: 'i' } });
-        const hashtagIds = hashtags.map((hashtag) => hashtag._id);
-        const postsByHashtag = await Post_Hashtags.find({ hashtagId: { $in: hashtagIds } }).populate('postId', 'content');
+        let posts;
+        let users;
 
-        //buscar usuario por nickname
-        const users = await User.find({ nickname: { $regex: searchText, $options: 'i' } });
+        // Verificar si searchText es un hashtag
+        if (searchText.startsWith('#')) {
+            // Buscar posts por hashtags
+            const hashtags = await Hashtag.find({ name: { $regex: searchText.substring(1), $options: 'i' } });
+            const hashtagIds = hashtags.map((hashtag) => hashtag._id);
+            const postsByHashtag = await Post_Hashtags.find({ hashtagId: { $in: hashtagIds } }).populate('postId').lean();
 
-        const posts = postsByContent.concat(postsByHashtag.map((postHashtag) => postHashtag.postId));
+            // Filtrar resultados nulos
+            const filteredPostsByHashtag = postsByHashtag.filter((postHashtag) => postHashtag.postId !== null);
+
+            posts = filteredPostsByHashtag.map((postHashtag) => postHashtag.postId);
+        } else {
+            // Buscar posts por texto
+            const postsByContent = await Post.find({ content: { $regex: searchText, $options: 'i' } }).lean();
+
+            // Buscar usuario por nickname
+            users = await User.find({ nickname: { $regex: searchText, $options: 'i' } });
+
+            // Filtrar resultados nulos
+            const filteredPostsByContent = postsByContent.filter((post) => post !== null);
+
+            posts = filteredPostsByContent;
+        }
 
         res.send({ posts, users });
     } catch (error) {
         res.status(500).send({ error: 'Internal server error' });
     }
 });
+
+
 
 //obtain all posts where the user is the owner
 /**
@@ -295,7 +312,7 @@ router.get('/post/getByNickname/:nickname', async (req, res) => {
         if (!user) {
             return res.status(404).send({ error: 'No user found' });
         }
-        const posts = await Post.find({ userId: user._id });
+        const posts = await Post.find({ userId: user._id }).sort({ date: 'desc' });
         if (!posts) {
             return res.status(404).send({ error: 'No posts found' });
         }

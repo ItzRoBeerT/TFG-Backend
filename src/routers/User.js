@@ -490,8 +490,4 @@ router.patch("/user/update", auth, async (req, res) => {
     }
 });
 
-
-
- 
-
 module.exports = router;
