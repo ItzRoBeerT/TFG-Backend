@@ -15,6 +15,12 @@ const Post = require("../models/Post");
  *         name:
  *           type: string
  *           description: The user's name
+ *         lastname:
+ *            type: string
+ *            description: The user's lastname
+ *         bio: 
+ *            type: string
+ *            description: The user's bio
  *         email:
  *           type: string
  *           description: The user's email
@@ -52,13 +58,17 @@ const Post = require("../models/Post");
  *                  example: 1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef
  *       required:
  *         - name
+ *         - lastname
  *         - email
  *         - password
+ *         - age
  *         - nickname
  *       example:
- *         name: John Doe
+ *         name: John
+ *         lastname: Doe
  *         email: johndoe@email.com
  *         password: johndoe21
+ *         age: 21
  *         nickname: johndoe
  */
 
@@ -93,10 +103,6 @@ router.post("/user/createAccount", async (req, res) => {
     }
 });
 
-router.get("/", (req, res) => {
-    res.send("Hello World!");
-});
-
 //get all users (for testing purposes)
 /**
  * @swagger
@@ -126,6 +132,34 @@ router.get("/all", async (req, res) => {
     }
 });
 
+
+/**
+ * @swagger
+ * /user/{id}:
+ *   get:
+ *     summary: Get a user by ID
+ *     tags:
+ *       - User
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The user ID
+ *     responses:
+ *       '200':
+ *         description: The user description by ID
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       '404':
+ *         description: User not found
+ *       '500':
+ *         description: Internal server error
+ */
+
 router.get("/user/:id", async (req, res) => {
     try {
         const user = await User.findById(req.params.id);
@@ -135,6 +169,40 @@ router.get("/user/:id", async (req, res) => {
         res.send(user);
     } catch (e) {
         res.status(500).send();
+    }
+});
+
+/**
+ * @swagger
+ * /user/nickname/{nickname}:
+ *   get:
+ *     summary: Get a user by nickname
+ *     description: Use this endpoint to get a user by nickname.
+ *     tags: [User]
+ *     parameters:
+ *       - in: path
+ *         name: nickname
+ *         required: true
+ *         description: The user's nickname
+ *         schema:
+ *           type: string
+ *     responses:
+ *       '200':
+ *         description: The user was successfully found
+ *       '404':
+ *         description: The user was not found
+ *       '500':
+ *         description: Internal server error
+ */
+router.get("/user/nickname/:nickname", async (req, res) => {
+    try {
+        const user = await User.findOne({ nickname: req.params.nickname });
+        if (!user) {
+            return res.status(404).send({ error: "User not found" });
+        }
+        res.send(user);
+    } catch (error) {
+        res.status(500).send({ error: "Internal server error" });
     }
 });
 
@@ -442,36 +510,47 @@ router.delete("/user/deleteAccount", auth, async (req, res) => {
     }
 });
 
-//get user by nickname
-router.get("/user/nickname/:nickname", async (req, res) => {
-    try {
-        const user = await User.findOne({ nickname: req.params.nickname });
-        if (!user) {
-            return res.status(404).send({ error: "User not found" });
-        }
-        res.send(user);
-    } catch (error) {
-        res.status(500).send({ error: "Internal server error" });
-    }
-});
-
-//obtener todos los friends de un usuario
-router.get("/user/getFriends/:id", async (req, res) => {
-    try {
-        const user = await User.findById(req.params.id).populate("friends.friend"); //populate the friends array with the friend object
-        if (!user) {
-            return res.status(404).send({ error: "User not found" });
-        }
-
-        const friends = user.friends.map((f) => f.friend);
-        res.send(friends);
-    } catch (error) {
-        res.status(500).send({ error: "Internal server error" });
-    }
-} );
-
-// actualizar usuario logueado
-
+/**
+ * @swagger
+ * /user/update:
+ *   patch:
+ *     summary: Update the authenticated user's profile
+ *     description: Use this endpoint to update the currently authenticated user's profile. Authentication is required to access this endpoint.
+ *     tags: [User]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               nickname:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *               name:
+ *                 type: string
+ *               lastName:
+ *                 type: string
+ *               age:
+ *                 type: number
+ *               bio:
+ *                 type: string
+ *               avatar:
+ *                 type: string
+ *             required:
+ *               - nickname
+ *               - email
+ *               - password
+ *     responses:
+ *       '200':
+ *         description: The user's profile was successfully updated
+ *       '400':
+ *         description: Invalid updates
+ */
 router.patch("/user/update", auth, async (req, res) => {
     try {
         const updates = Object.keys(req.body);
@@ -489,5 +568,40 @@ router.patch("/user/update", auth, async (req, res) => {
         res.status(500).send({ error: "Internal server error" });
     }
 });
+
+/**
+ * @swagger
+ * /user/getFriends/{id}:
+ *   get:
+ *     summary: Get friends of a user
+ *     tags: [User]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         description: The user's id
+ *         schema:
+ *           type: string
+ *     responses:
+ *       '200':
+ *         description: The user's friends were successfully found
+ *       '404':
+ *         description: The user was not found
+ *       '500':
+ *         description: Internal server error
+ */
+router.get("/user/getFriends/:id", async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id).populate("friends.friend"); //populate the friends array with the friend object
+        if (!user) {
+            return res.status(404).send({ error: "User not found" });
+        }
+
+        const friends = user.friends.map((f) => f.friend);
+        res.send(friends);
+    } catch (error) {
+        res.status(500).send({ error: "Internal server error" });
+    }
+} );
 
 module.exports = router;

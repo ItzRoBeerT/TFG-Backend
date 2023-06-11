@@ -218,8 +218,6 @@ router.get('/post/search/:searchText', async (req, res) => {
     }
 });
 
-
-
 //obtain all posts where the user is the owner
 /**
  * @swagger
@@ -253,45 +251,6 @@ router.get('/post/myPosts', auth, async (req, res) => {
     }
 });
 
-//FIXME borrar
-//obtain a post where the user is the owner
-/**
- * @swagger
- * /post/get/{id}:
- *      get:
- *          summary: Obtain a post where the user is the owner
- *          tags: [Post]
- *          parameters:
- *              - in: path
- *                name: id
- *                schema:
- *                type: string
- *                required: true
- *                description: The post id
- *          responses:
- *              200:
- *                  description: The post was obtained
- *              500:
- *                  description: Some server error
- *              401:
- *                  description: Unauthorized
- *              400:
- *                  description: Bad request
- *              404:
- *                  description: Not found
- */
-router.get('/post/get/:id', async (req, res) => {
-    try {
-        const post = await Post.findOne({ _id: req.params.id, userId: req.user._id });
-        if (!post) {
-            return res.status(404).send();
-        }
-        res.send(post);
-    } catch (error) {
-        res.status(500).send({ error: 'Internal server error' });
-    }
-});
-
 //obtain all posts where the user id is the owner
 router.get('/post/getByUserId/:id', async (req, res) => {
     try {
@@ -306,6 +265,48 @@ router.get('/post/getByUserId/:id', async (req, res) => {
 });
 
 //obtain all posts where the user nickname is the owner
+/**
+ * @swagger
+ * /post/getByNickname/{nickname}:
+ *   get:
+ *     summary: Get posts by user nickname
+ *     tags: [Post]
+ *     parameters:
+ *       - in: path
+ *         name: nickname
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Apodo del usuario para filtrar las publicaciones
+ *     responses:
+ *       '200':
+ *         description: Publicaciones encontradas
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Post'
+ *       '404':
+ *         description: Usuario o publicaciones no encontrados
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *       '500':
+ *         description: Error interno del servidor
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ */
+
 router.get('/post/getByNickname/:nickname', async (req, res) => {
     try {
         const user = await User.findOne({ nickname: req.params.nickname });
@@ -322,7 +323,39 @@ router.get('/post/getByNickname/:nickname', async (req, res) => {
     }
 });
 
-//obtain a post by id
+/**
+ * @swagger
+ * /post/getById/{id}:
+ *   get:
+ *     summary: Get post by id
+ *     tags: [Post]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID de la publicación
+ *     responses:
+ *       '200':
+ *         description: Publicación encontrada
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Post'
+ *       '404':
+ *         description: Publicación no encontrada
+ *       '500':
+ *         description: Error interno del servidor
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ */
+
 router.get('/post/getById/:id', async (req, res) => {
     try {
         const post = await Post.findOne({ _id: req.params.id }).populate('userId', 'name');
@@ -338,25 +371,36 @@ router.get('/post/getById/:id', async (req, res) => {
 //obtain most popular posts
 /**
  * @swagger
- * /post/popular:
- *      get:
- *          summary: Obtain most popular posts
- *          tags: [Post]
- *          responses:
- *              200:
- *                  description: The posts were obtained
- *              500:
- *                  description: Some server error
- *              401:
- *                  description: Unauthorized
- *              400:
- *                  description: Bad request
- *              404:
- *                  description: Not found
+ * /post/popular/{page}:
+ *   get:
+ *     summary: Obtain most popular posts
+ *     tags: [Post]
+ *     parameters:
+ *       - in: path
+ *         name: page
+ *         schema:
+ *           type: integer
+ *         required: true
+ *         description: Page number
+ *     responses:
+ *       200:
+ *         description: The posts were obtained
+ *       500:
+ *         description: Some server error
+ *       401:
+ *         description: Unauthorized
+ *       400:
+ *         description: Bad request
+ *       404:
+ *         description: Not found
  */
-router.get('/post/popular', async (req, res) => {
+router.get('/post/popular/:page', async (req, res) => {
     try {
-        const posts = await Post.find().sort({ likes: -1 }).limit(10);
+        const page = req.params.page || 1;
+        const limit = 5;
+        const skip = (page - 1) * limit;
+
+        const posts = await Post.find({}).sort({ likes: 'desc' }).limit(limit).skip(skip);
         if (!posts) {
             return res.status(404).send({ error: 'No posts found' });
         }
@@ -472,8 +516,49 @@ router.post('/post/like/:id', auth, async (req, res) => {
     }
 });
 
-//remove a like to a post
-
+/**
+ * @swagger
+ * /post/unlike/{id}:
+ *   post:
+ *     summary: remove a like to a post
+ *     tags: [Post]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID de la publicación
+ *     responses:
+ *       '200':
+ *         description: Dislike aplicado correctamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Post'
+ *       '400':
+ *         description: No has dado like a esta publicación
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *       '404':
+ *         description: Publicación no encontrada
+ *       '500':
+ *         description: Error interno del servidor
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ */
 router.post('/post/unlike/:id', auth, async (req, res) => {
     try {
         const post = await Post.findById(req.params.id);
@@ -617,7 +702,36 @@ router.get('/post/getAllPosts', async (req, res) => {
     }
 });
 
-//delete a comment by id
+/**
+ * @swagger
+ * /post/deleteComment/{id}:
+ *  delete:
+ *   summary: delete a comment by id
+ *   tags: [Post]
+ *   security:
+ *    - bearerAuth: []
+ *   consumes:
+ *    - application/json
+ *   parameters:
+ *    - in: path
+ *      name: id
+ *      schema:
+ *       type: string
+ *      required: true
+ *      description: ID del comentario
+ *   responses:
+ *    200:
+ *     description: El comentario ha sido eliminado
+ *    400:
+ *     description: Solicitud incorrecta
+ *    401:
+ *     description: No autorizado
+ *    404:
+ *     description: No encontrado
+ *    500:
+ *     description: Error del servidor
+ */
+
 router.delete('/post/deleteComment/:id', auth, async (req, res) => {
     try {
         const post = await Post.findOne({ 'comments._id': req.params.id });
@@ -648,7 +762,33 @@ router.delete('/post/deleteComment/:id', auth, async (req, res) => {
     }
 });
 
-//get all post ordered by date by recent
+/**
+ * @swagger
+ * /post/getRecentPosts/{page}:
+ *   get:
+ *     summary: Get recent posts
+ *     tags:
+ *       - Post
+ *     parameters:
+ *       - in: path
+ *         name: page
+ *         schema:
+ *           type: integer
+ *         required: true
+ *         description: The page number
+ *     responses:
+ *       '200':
+ *         description: Successful response
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Post'
+ *       '500':
+ *         description: Internal server error
+ */
+
 router.get('/post/getRecentPosts/:page', async (req, res) => {
     try {
 
