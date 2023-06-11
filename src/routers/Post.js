@@ -201,7 +201,7 @@ router.get('/post/search/:searchText', async (req, res) => {
             posts = filteredPostsByHashtag.map((postHashtag) => postHashtag.postId);
         } else {
             // Buscar posts por texto
-            const postsByContent = await Post.find({ content: { $regex: searchText, $options: 'i' } }).lean();
+            const postsByContent = await Post.find({ content: { $regex: searchText, $options: 'i' } }).sort({ date: -1 }).lean();
 
             // Buscar usuario por nickname
             users = await User.find({ nickname: { $regex: searchText, $options: 'i' } });
