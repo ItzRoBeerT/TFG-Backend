@@ -134,6 +134,64 @@ router.get('/all', async (req, res) => {
 
 /**
  * @swagger
+ * /user/nicknames:
+ *   get:
+ *     summary: Get all nicknames
+ *     tags:
+ *       - User
+ *     responses:
+ *       '200':
+ *         description: All nicknames
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: string
+ *       '500':
+ *         description: Internal server error
+ */
+router.get('/user/nicknames', async (req, res) => {
+    try {
+        const users = await User.find({});
+        const nicknames = users.map((user) => user.nickname);
+        res.send(nicknames);
+    } catch (error) {
+        console.log(error);
+    }
+});
+
+/**
+ * @swagger
+ * /user/emails:
+ *   get:
+ *     summary: Get all emails of users
+ *     tags:
+ *       - User
+ *     responses:
+ *       '200':
+ *         description: All emails
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: string
+ *       '500':
+ *         description: Error interno del servidor
+ */
+router.get('/user/emails', async (req, res) => {
+    try {
+        const users = await User.find({});
+        const emails = users.map((user) => user.email);
+        res.send(emails);
+    } catch (error) {
+        console.log(error);
+    }
+});
+
+/**
+ * @swagger
  * /user/{id}:
  *   get:
  *     summary: Get a user by ID
@@ -493,7 +551,7 @@ router.post('/user/logout', auth, async (req, res) => {
 router.delete('/user/deleteAccount', auth, async (req, res) => {
     try {
         const delteUser = await User.findByIdAndDelete({ _id: req.user._id });
-        
+
         // Eliminar los comentarios del usuario eliminado
         await Post.updateMany({}, { $pull: { comments: { userId: req.user._id } } }, { multi: true });
 
