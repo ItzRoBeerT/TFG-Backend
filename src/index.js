@@ -23,7 +23,8 @@ const swaggerOptions = {
         },
         servers: [
             {
-                url: "http://localhost:3004",
+                url: "https://tfg-backend.vercel.app/",
+                
             },
         ],
     },
