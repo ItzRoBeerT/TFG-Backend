@@ -103,6 +103,10 @@ router.post('/user/createAccount', async (req, res) => {
     }
 });
 
+router.get('/hello' , (req, res) => {
+    res.send('Hello World!');
+});
+
 //get all users (for testing purposes)
 /**
  * @swagger

@@ -21,12 +21,7 @@ const swaggerOptions = {
             title: "Social Media API",
             version: "1.0.0",
         },
-        servers: [
-            {
-                url: "https://tfg-backend.vercel.app/",
-                
-            },
-        ],
+        
     },
     apis: [`${path.join(__dirname, "./routers/*.js")}`],
 };
@@ -41,5 +36,5 @@ app.use(postRouter);
 
 
 app.listen(port, () => {
-    console.log("Server is up on port " + port);
+    console.log("Server is up on port " + port + "url "+ process.env.MONGODB_URL);
 });
