@@ -1,8 +1,8 @@
-const express = require("express");
-const User = require("../models/User");
+const express = require('express');
+const User = require('../models/User');
 const router = new express.Router();
-const auth = require("../middleware/auth");
-const Post = require("../models/Post");
+const auth = require('../middleware/auth');
+const Post = require('../models/Post');
 
 //create a new user
 /**
@@ -18,7 +18,7 @@ const Post = require("../models/Post");
  *         lastname:
  *            type: string
  *            description: The user's lastname
- *         bio: 
+ *         bio:
  *            type: string
  *            description: The user's bio
  *         email:
@@ -93,13 +93,13 @@ const Post = require("../models/Post");
  *       '500':
  *         description: Internal Server Error
  */
-router.post("/user/createAccount", async (req, res) => {
+router.post('/user/createAccount', async (req, res) => {
     const user = new User(req.body);
     try {
         await user.save();
-        res.send("account created");
+        res.send('account created');
     } catch (e) {
-       res.status(400).send({ error: e.message });
+        res.status(400).send({ error: e.message });
     }
 });
 
@@ -123,7 +123,7 @@ router.post("/user/createAccount", async (req, res) => {
  *       '500':
  *         description: Internal Server Error
  */
-router.get("/all", async (req, res) => {
+router.get('/all', async (req, res) => {
     try {
         const users = await User.find({});
         res.send(users);
@@ -131,7 +131,6 @@ router.get("/all", async (req, res) => {
         res.status(500).send();
     }
 });
-
 
 /**
  * @swagger
@@ -160,11 +159,11 @@ router.get("/all", async (req, res) => {
  *         description: Internal server error
  */
 
-router.get("/user/:id", async (req, res) => {
+router.get('/user/:id', async (req, res) => {
     try {
         const user = await User.findById(req.params.id);
         if (!user) {
-            return res.status(404).send({ error: "User not found" });
+            return res.status(404).send({ error: 'User not found' });
         }
         res.send(user);
     } catch (e) {
@@ -194,15 +193,15 @@ router.get("/user/:id", async (req, res) => {
  *       '500':
  *         description: Internal server error
  */
-router.get("/user/nickname/:nickname", async (req, res) => {
+router.get('/user/nickname/:nickname', async (req, res) => {
     try {
         const user = await User.findOne({ nickname: req.params.nickname });
         if (!user) {
-            return res.status(404).send({ error: "User not found" });
+            return res.status(404).send({ error: 'User not found' });
         }
         res.send(user);
     } catch (error) {
-        res.status(500).send({ error: "Internal server error" });
+        res.status(500).send({ error: 'Internal server error' });
     }
 });
 
@@ -246,13 +245,13 @@ router.get("/user/nickname/:nickname", async (req, res) => {
  *       '500':
  *         description: Internal server error
  */
-router.post("/user/login", async (req, res) => {
+router.post('/user/login', async (req, res) => {
     try {
         const user = await User.findByCredentials(req.body.email, req.body.password);
         const token = await user.generateAuthToken();
         res.send({ user, token });
     } catch (e) {
-        res.status(401).send({ error: "Invalid email or password" });
+        res.status(401).send({ error: 'Invalid email or password' });
     }
 });
 
@@ -287,7 +286,7 @@ router.post("/user/login", async (req, res) => {
  *       '404':
  *         description: The authenticated user's profile could not be found
  */
-router.get("/user/me", auth, async (req, res) => {
+router.get('/user/me', auth, async (req, res) => {
     try {
         if (!req.user) {
             return res.status(404).send({ error: "The authenticated user's profile could not be found" });
@@ -325,30 +324,30 @@ router.get("/user/me", auth, async (req, res) => {
  *    '500':
  *       description: Internal server error
  */
-router.post("/user/addFriend/:id", auth, async (req, res) => {
+router.post('/user/addFriend/:id', auth, async (req, res) => {
     try {
         const user = await User.findById(req.user._id);
         if (!user) {
-            return res.status(404).send({ error: "User not found" });
+            return res.status(404).send({ error: 'User not found' });
         }
 
         const friend = await User.findById(req.params.id);
         if (!friend) {
-            return res.status(404).send({ error: "Friend not found" });
+            return res.status(404).send({ error: 'Friend not found' });
         }
 
         const isFriend = user.friends.find((f) => f.friend.toString() === friend._id.toString());
 
         if (isFriend) {
-            return res.status(400).send({ error: "Friend already added" });
+            return res.status(400).send({ error: 'Friend already added' });
         }
 
         user.friends.push({ friend: friend._id });
         await user.save();
 
-        res.send({ message: "Friend added successfully", user });
+        res.send({ message: 'Friend added successfully', user });
     } catch (error) {
-        res.status(500).send({ error: "Internal server error" });
+        res.status(500).send({ error: 'Internal server error' });
     }
 });
 
@@ -380,17 +379,17 @@ router.post("/user/addFriend/:id", auth, async (req, res) => {
  *     '500':
  *         description: Internal server error
  */
-router.get("/user/getFriends", auth, async (req, res) => {
+router.get('/user/getFriends', auth, async (req, res) => {
     try {
-        const user = await User.findById(req.user._id).populate("friends.friend"); //populate the friends array with the friend object
+        const user = await User.findById(req.user._id).populate('friends.friend'); //populate the friends array with the friend object
         if (!user) {
-            return res.status(404).send({ error: "User not found" });
+            return res.status(404).send({ error: 'User not found' });
         }
 
         const friends = user.friends.map((f) => f.friend);
         res.send(friends);
     } catch (error) {
-        res.status(500).send({ error: "Internal server error" });
+        res.status(500).send({ error: 'Internal server error' });
     }
 });
 
@@ -421,23 +420,23 @@ router.get("/user/getFriends", auth, async (req, res) => {
  *    '500':
  *       description: Internal server error
  */
-router.delete("/user/deleteFriend/:id", auth, async (req, res) => {
+router.delete('/user/deleteFriend/:id', auth, async (req, res) => {
     try {
         const user = await User.findById(req.user._id);
         if (!user) {
-            return res.status(404).send({ error: "User not found" });
+            return res.status(404).send({ error: 'User not found' });
         }
 
         const friend = await User.findById(req.params.id);
         if (!friend) {
-            return res.status(404).send({ error: "Friend not found" });
+            return res.status(404).send({ error: 'Friend not found' });
         }
 
         user.friends = user.friends.filter((f) => f.friend.toString() !== friend._id.toString());
         await user.save();
-        res.send({ message: "Friend deleted successfully", user });
+        res.send({ message: 'Friend deleted successfully', user });
     } catch (error) {
-        res.status(500).send({ error: "Internal server error" });
+        res.status(500).send({ error: 'Internal server error' });
     }
 });
 
@@ -459,17 +458,17 @@ router.delete("/user/deleteFriend/:id", auth, async (req, res) => {
  *          '500':
  *              description: Internal server error
  */
-router.post("/user/logout", auth, async (req, res) => {
+router.post('/user/logout', auth, async (req, res) => {
     try {
         req.user.tokens = req.user.tokens.filter((token) => {
             return token.token !== req.token;
         });
 
         await req.user.save();
-        res.send("Logged out");
+        res.send('Logged out');
     } catch (e) {
         console.log(e);
-        res.status(500).send({ error: "Internal server error" });
+        res.status(500).send({ error: 'Internal server error' });
     }
 });
 
@@ -491,9 +490,12 @@ router.post("/user/logout", auth, async (req, res) => {
  *         '500':
  *            description: Internal server error
  */
-router.delete("/user/deleteAccount", auth, async (req, res) => {
+router.delete('/user/deleteAccount', auth, async (req, res) => {
     try {
         const delteUser = await User.findByIdAndDelete({ _id: req.user._id });
+        
+        // Eliminar los comentarios del usuario eliminado
+        await Post.updateMany({}, { $pull: { comments: { userId: req.user._id } } }, { multi: true });
 
         if (delteUser) {
             await Post.deleteMany({ userId: req.user._id });
@@ -504,9 +506,9 @@ router.delete("/user/deleteAccount", auth, async (req, res) => {
                 await user.save();
             });
         }
-        res.send("Account deleted");
+        res.send('Account deleted');
     } catch (e) {
-        res.status(500).send("something went wrong");
+        res.status(500).send('something went wrong');
     }
 });
 
@@ -551,21 +553,21 @@ router.delete("/user/deleteAccount", auth, async (req, res) => {
  *       '400':
  *         description: Invalid updates
  */
-router.patch("/user/update", auth, async (req, res) => {
+router.patch('/user/update', auth, async (req, res) => {
     try {
         const updates = Object.keys(req.body);
-        const allowedUpdates = ["nickname", "email", "password", "name", "lastName", "age", "bio", "avatar"];
+        const allowedUpdates = ['nickname', 'email', 'password', 'name', 'lastName', 'age', 'bio', 'avatar'];
         const isValidOperation = updates.every((update) => allowedUpdates.includes(update));
 
         if (!isValidOperation) {
-            return res.status(400).send({ error: "Invalid updates" });
+            return res.status(400).send({ error: 'Invalid updates' });
         }
 
         updates.forEach((update) => (req.user[update] = req.body[update]));
         await req.user.save();
         res.send(req.user);
     } catch (error) {
-        res.status(500).send({ error: "Internal server error" });
+        res.status(500).send({ error: 'Internal server error' });
     }
 });
 
@@ -590,18 +592,18 @@ router.patch("/user/update", auth, async (req, res) => {
  *       '500':
  *         description: Internal server error
  */
-router.get("/user/getFriends/:id", async (req, res) => {
+router.get('/user/getFriends/:id', async (req, res) => {
     try {
-        const user = await User.findById(req.params.id).populate("friends.friend"); //populate the friends array with the friend object
+        const user = await User.findById(req.params.id).populate('friends.friend'); //populate the friends array with the friend object
         if (!user) {
-            return res.status(404).send({ error: "User not found" });
+            return res.status(404).send({ error: 'User not found' });
         }
 
         const friends = user.friends.map((f) => f.friend);
         res.send(friends);
     } catch (error) {
-        res.status(500).send({ error: "Internal server error" });
+        res.status(500).send({ error: 'Internal server error' });
     }
-} );
+});
 
 module.exports = router;
