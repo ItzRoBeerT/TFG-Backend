@@ -18,7 +18,7 @@ const swaggerOptions = {
     definition: {
         openapi: "3.0.0",
         info: {
-            title: "Social Media API",
+            title: "Pocket SM API",
             version: "1.0.0",
         },
         
